@@ -10,12 +10,12 @@ endmodule
 module gpblk(input logic gik, pik, gk_1j, pk_1j,
              output logic gij, pij);
     // This module generates block level generate and propogate bits
-    assign pij = pik & pik_j;
-    assign gij = gik | (pik & gk_1j)
+    assign pij = pik & pk_1j;
+    assign gij = gik | (pik & gk_1j);
 endmodule
 
 module carry_generate(input logic gij, pij, cj_1,
-                      output logic cout)
+                      output logic cout);
     assign cout = gij | (pij & cj_1);
 endmodule 
 
@@ -61,8 +61,18 @@ module hcla_2bit_2carry(input logic [1:0]A,B,
 
     // Get block level generate and propogate with 2 carry outs
     gpblk_with_2carry gpblk(.gik(g11), .pik(p11), .gk_1j(g00), .pk_1j(p00), .c0(c0),
-                            .gij(g1_0), pij.(p1_0), c1.(c1), c2.(c2));
+                            .gij(g1_0), .pij(p1_0), .c1(c1), .c2(c2));
 
+endmodule
+
+module xor2(input logic A, B,
+           output logic Y);
+    assign Y = A ^ B;
+endmodule
+
+module xnor2(input logic A, B,
+            output logic Y);
+    assign Y = ~(A ^ B);
 endmodule
 
 module hcla_2bit_1carry(input logic [1:0]A,B,
@@ -80,7 +90,7 @@ module hcla_2bit_1carry(input logic [1:0]A,B,
 
     // Get block level generate and propogate with 2 carry outs
     gpblk_with_1carry gpblk_10(.gik(g11), .pik(p11), .gk_1j(g00), .pk_1j(p00), .c0(c0),
-                            .gij(g1_0), pij.(p1_0), c1.(c1));
+                            .gij(g1_0), .pij(p1_0), .c1(c1));
 
 endmodule
 
@@ -96,11 +106,95 @@ module hcla_4bit(input logic [3:0]A, B,
     // Generate g10, p10, c1, c2
     hcla_2bit_2carry hcla_2bit_10(A[1:0], B[1:0], c0, g1_0, p1_0, cout[1], cout[0]); 
     // Generate g32, p32, c3
-    hcla_2bit_2carry hcla_2_bit_32(A[3:2], B[3:2], cout[1], g3_2, p3_2, cout[2]);
+    hcla_2bit_1carry hcla_2_bit_32(A[3:2], B[3:2], cout[1], g3_2, p3_2, cout[2]);
 
     // Generate g3_0 and p3_0
     gpblk gpblk_30(g3_2, p3_2, g1_0, p1_0, g3_0, p3_0);
 endmodule 
+
+module hcla_8bit(input logic [7:0]A, B,
+                 input logic c0,
+                 output logic g7_0, p7_0,
+                 output logic [6:0]cout);
+    // This module generates the generate and propogate of 8 bit block and
+    // the carry in for bits 1 through 7
+
+    logic g3_0, p3_0, g7_4, p7_4;
+
+    hcla_4bit hcla_4bit_3_0(A[3:0], B[3:0], c0, g3_0, p3_0, cout[2:0]);
+    hcla_4bit hcla_4bit_7_4(A[7:4], B[7:4], cout[3], g7_4, p7_4, cout[6:4]);
+
+    // Generate C4: cout[3]
+    carry_generate carry(.gij(g3_0), .pij(p3_0), .cj_1(c0), .cout(cout[3]));
+
+    // Genreate g7_0 and p7_0
+    gpblk gpblk_7_0(g7_4, p7_4, g3_0, p3_0, g7_0, p7_0);
+
+endmodule 
+
+
+module hcla_16bit(input logic [15:0]A, B,
+                  input logic c0,
+                  output logic [15:0]cout);
+    // This module generates the carry in for bits 1 through 15 using HCLA logic
+
+    // Create wires for intermediate generate and propogate
+    logic g7_0, p7_0, g15_8, p15_8;
+    logic g15_0, p15_0;
+
+    hcla_8bit hcla_8bit_7_0(A[7:0], B[7:0], c0, g7_0, p7_0, cout[6:0]);
+    hcla_8bit hcla_8bit_15_8(A[15:8], B[15:8], cout[7], g15_8, p15_8, cout[14:8]);
+
+    // Generate C8: cout[7]
+    carry_generate carry7(.gij(g7_0), .pij(p7_0), .cj_1(c0), .cout(cout[7]));
+
+    // Genreate g15_0 and p15_0
+    gpblk gpblk_15_0(g15_8, p15_8, g7_0, p7_0, g15_0, p15_0);
+
+    // Generate Carry out of the 16 bit addition
+    carry_generate carry15(.gij(g15_0), .pij(p15_0), .cj_1(c0), .cout(cout[15]));
+endmodule
+
+module sum(input logic A,B,Cin,
+           output logic Sum);
+    assign Sum = A ^ B ^ Cin;
+endmodule
+
+module hcla_add_16bit(input logic [15:0] A,B,
+                      output logic [15:0] sum,
+                      output logic OF_S);
+    
+    logic [15:0]carry;
+    logic a_xnor_b, a_xor_sum;
+
+    hcla_16bit carry_generation(A, B, 1'b0, carry);
+
+    sum s0(A[0], B[0], 1'b0, sum[0]);
+    sum s1(A[1], B[1], carry[0], sum[1]);
+    sum s2(A[2], B[2], carry[1], sum[2]);
+    sum s3(A[3], B[3], carry[2], sum[3]);
+    sum s4(A[4], B[4], carry[3], sum[4]);
+    sum s5(A[5], B[5], carry[4], sum[5]);
+    sum s6(A[6], B[6], carry[5], sum[6]);
+    sum s7(A[7], B[7], carry[6], sum[7]);
+    sum s8(A[8], B[8], carry[7], sum[8]);
+    sum s9(A[9], B[9], carry[8], sum[9]);
+    sum s10(A[10], B[10], carry[9], sum[10]);
+    sum s11(A[11], B[11], carry[10], sum[11]);
+    sum s12(A[12], B[12], carry[11], sum[12]);
+    sum s13(A[13], B[13], carry[12], sum[13]);
+    sum s14(A[14], B[14], carry[13], sum[14]);
+    sum s15(A[15], B[15], carry[14], sum[15]);
+
+    xnor2 xnor1(A[15], B[15], a_xnor_b);
+    xor2 xor1(A[15], sum[15], a_xor_sum);
+
+    assign OF_S = a_xnor_b & a_xor_sum;
+
+endmodule
+
+
+
 
 
 
