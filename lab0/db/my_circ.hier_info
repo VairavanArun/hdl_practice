@@ -1,0 +1,8 @@
+|my_circ
+A => a.IN0
+S => b.IN0
+S => a.IN1
+B => b.IN1
+Y <= Y.DB_MAX_OUTPUT_PORT_TYPE
+
+
