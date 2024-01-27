@@ -160,12 +160,35 @@ module sum(input logic A,B,Cin,
     assign Sum = A ^ B ^ Cin;
 endmodule
 
+module overflow_sum(input logic a_sign, b_sign, sum_sign,
+                    output logic OF_S);
+    // This module generates the overflow for sum based on signs of
+    // a, b and sum
+    logic a_xnor_b, a_xor_sum;
+    xnor2 xnor1(a_sign, b_sign, a_xnor_b);
+    xor2 xor1(a_sign, sum_sign, a_xor_sum);
+
+    assign OF_S = a_xnor_b & a_xor_sum;
+
+endmodule
+
+module overflow_diff(input logic a_sign, b_sign, diff_sign,
+                    output logic OF_D);
+    // This module generates the overflow for difference based on signs of
+    // a, b and diff
+    logic a_xor_b, a_xor_sum;
+    xor2 xor1(a_sign, b_sign, a_xor_b);
+    xor2 xor2(b_sign, diff_sign, a_xor_sum);
+
+    assign OF_D = a_xor_b & a_xor_sum;
+endmodule
+
+
 module hcla_add_16bit(input logic [15:0] A,B,
                       output logic [15:0] sum,
                       output logic OF_S);
     
     logic [15:0]carry;
-    logic a_xnor_b, a_xor_sum;
 
     hcla_16bit carry_generation(A, B, 1'b0, carry);
 
@@ -186,47 +209,59 @@ module hcla_add_16bit(input logic [15:0] A,B,
     sum s14(A[14], B[14], carry[13], sum[14]);
     sum s15(A[15], B[15], carry[14], sum[15]);
 
-    xnor2 xnor1(A[15], B[15], a_xnor_b);
-    xor2 xor1(A[15], sum[15], a_xor_sum);
-
-    assign OF_S = a_xnor_b & a_xor_sum;
-
+    overflow_sum of_s(A[15], B[15], sum[15], OF_S);
 endmodule
 
-module hcla_sub_16bit(input logic [15:0] A,B_in,
-                      output logic [15:0] sum,
+module hcla_sub_16bit(input logic [15:0] A,B,
+                      output logic [15:0] diff,
                       output logic OF_D);
     
     logic [15:0]carry;
-    logic [15:0]B; //This has the negated value of B_in
-    logic a_xor_b, a_xor_sum;
+    logic [15:0]not_B; //This has the negated value of B_in
 
-    assign B = ~B_in;
+    assign not_B = ~B;
 
-    hcla_16bit carry_generation(A, B, 1'b1, carry);
+    hcla_16bit carry_generation(A, not_B, 1'b1, carry);
 
-    sum s0(A[0], B[0], 1'b1, sum[0]);
-    sum s1(A[1], B[1], carry[0], sum[1]);
-    sum s2(A[2], B[2], carry[1], sum[2]);
-    sum s3(A[3], B[3], carry[2], sum[3]);
-    sum s4(A[4], B[4], carry[3], sum[4]);
-    sum s5(A[5], B[5], carry[4], sum[5]);
-    sum s6(A[6], B[6], carry[5], sum[6]);
-    sum s7(A[7], B[7], carry[6], sum[7]);
-    sum s8(A[8], B[8], carry[7], sum[8]);
-    sum s9(A[9], B[9], carry[8], sum[9]);
-    sum s10(A[10], B[10], carry[9], sum[10]);
-    sum s11(A[11], B[11], carry[10], sum[11]);
-    sum s12(A[12], B[12], carry[11], sum[12]);
-    sum s13(A[13], B[13], carry[12], sum[13]);
-    sum s14(A[14], B[14], carry[13], sum[14]);
-    sum s15(A[15], B[15], carry[14], sum[15]);
+    sum s0(A[0], not_B[0], 1'b1, diff[0]);
+    sum s1(A[1], not_B[1], carry[0], diff[1]);
+    sum s2(A[2], not_B[2], carry[1], diff[2]);
+    sum s3(A[3], not_B[3], carry[2], diff[3]);
+    sum s4(A[4], not_B[4], carry[3], diff[4]);
+    sum s5(A[5], not_B[5], carry[4], diff[5]);
+    sum s6(A[6], not_B[6], carry[5], diff[6]);
+    sum s7(A[7], not_B[7], carry[6], diff[7]);
+    sum s8(A[8], not_B[8], carry[7], diff[8]);
+    sum s9(A[9], not_B[9], carry[8], diff[9]);
+    sum s10(A[10], not_B[10], carry[9], diff[10]);
+    sum s11(A[11], not_B[11], carry[10], diff[11]);
+    sum s12(A[12], not_B[12], carry[11], diff[12]);
+    sum s13(A[13], not_B[13], carry[12], diff[13]);
+    sum s14(A[14], not_B[14], carry[13], diff[14]);
+    sum s15(A[15], not_B[15], carry[14], diff[15]);
 
-    xor2 xor1(A[15], B_in[15], a_xor_b);
-    xor2 xor2(A[15], sum[15], a_xor_sum);
+    overflow_diff of_d(A[15], B[15], diff[15], OF_D);
+endmodule
 
+module less_than_check(input logic diff_sign, of_d,
+                 output logic less_than);
+    // THis module checks if A is less than B using difference and
+    // overflow of the subtractor
+    // A < B when difference is negative(diff_sign = 1) and there is no overflow(of_d = 0)
+    // and when difference is positive(diff_sign = 0) and there is overflow(of_d = 1)
+    xor2 xor_lessthan(diff_sign, of_d, less_than);
+endmodule 
 
-    assign OF_D = a_xor_b & a_xor_sum;
+module arithmetic_unit(input logic  [15:0] A, B,
+                       output logic [15:0] Sum, Diff,
+                       output logic        OF_S, OF_D, LessThan);
+    // This module generates the sum, difference, overflow flags for addition and subtraction
+    // Instantiate the adder module
+    hcla_add_16bit adder(A, B, Sum, OF_S);
+    // Instatiate the subtractor module
+    hcla_sub_16bit subtractor(A, B, Diff, OF_D);
+    // Instantiate the LessThan circuit
+    less_than_check less_than(Diff[15], OF_D, LessThan);
 
 endmodule
 
