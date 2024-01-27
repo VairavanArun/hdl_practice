@@ -25,7 +25,7 @@ module gpblk_with_1carry(input logic gik, pik, gk_1j, pk_1j, c0,
     // block level generate and propogate
 
     // Step-1: Get block level generate and propogate
-    gpblk blk0(.gik(gik), .pik(pik), .gk_1j(pk_1j), .gij(gij), .pij(pij));
+    gpblk blk0(.gik(gik), .pik(pik), .gk_1j(gk_1j), .pk_1j(pk_1j), .gij(gij), .pij(pij));
 
     // Step-2: Generate carry out of the k-1th bit
     carry_generate carry(.gij(gk_1j), .pij(pk_1j), .cj_1(c0), .cout(c1));
@@ -190,6 +190,43 @@ module hcla_add_16bit(input logic [15:0] A,B,
     xor2 xor1(A[15], sum[15], a_xor_sum);
 
     assign OF_S = a_xnor_b & a_xor_sum;
+
+endmodule
+
+module hcla_sub_16bit(input logic [15:0] A,B_in,
+                      output logic [15:0] sum,
+                      output logic OF_D);
+    
+    logic [15:0]carry;
+    logic [15:0]B; //This has the negated value of B_in
+    logic a_xor_b, a_xor_sum;
+
+    assign B = ~B_in;
+
+    hcla_16bit carry_generation(A, B, 1'b1, carry);
+
+    sum s0(A[0], B[0], 1'b1, sum[0]);
+    sum s1(A[1], B[1], carry[0], sum[1]);
+    sum s2(A[2], B[2], carry[1], sum[2]);
+    sum s3(A[3], B[3], carry[2], sum[3]);
+    sum s4(A[4], B[4], carry[3], sum[4]);
+    sum s5(A[5], B[5], carry[4], sum[5]);
+    sum s6(A[6], B[6], carry[5], sum[6]);
+    sum s7(A[7], B[7], carry[6], sum[7]);
+    sum s8(A[8], B[8], carry[7], sum[8]);
+    sum s9(A[9], B[9], carry[8], sum[9]);
+    sum s10(A[10], B[10], carry[9], sum[10]);
+    sum s11(A[11], B[11], carry[10], sum[11]);
+    sum s12(A[12], B[12], carry[11], sum[12]);
+    sum s13(A[13], B[13], carry[12], sum[13]);
+    sum s14(A[14], B[14], carry[13], sum[14]);
+    sum s15(A[15], B[15], carry[14], sum[15]);
+
+    xor2 xor1(A[15], B_in[15], a_xor_b);
+    xor2 xor2(A[15], sum[15], a_xor_sum);
+
+
+    assign OF_D = a_xor_b & a_xor_sum;
 
 endmodule
 
