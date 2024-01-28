@@ -5,8 +5,8 @@ module arithmetic_unit_tb();
     logic of_d, of_s, less_than;
 
     //Instantiate the arithmetic unit module
-    arithmetic_unit(.A(a), .B(b), .Sum(sum), .Diff(diff), 
-                    .OF_S(of_s), .OF_D(of_d), .LessThan(less_than));
+    arithmetic_unit au1(.A(a), .B(b), .Sum(sum), .Diff(diff), 
+                        .OF_S(of_s), .OF_D(of_d), .LessThan(less_than));
 
     initial 
     begin
