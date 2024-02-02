@@ -178,7 +178,7 @@ module overflow_diff(input logic a_sign, b_sign, diff_sign,
     // a, b and diff
     logic a_xor_b, a_xor_sum;
     xor2 xor1(a_sign, b_sign, a_xor_b);
-    xor2 xor2(b_sign, diff_sign, a_xor_sum);
+    xor2 xor2(a_sign, diff_sign, a_xor_sum);
 
     assign OF_D = a_xor_b & a_xor_sum;
 endmodule
