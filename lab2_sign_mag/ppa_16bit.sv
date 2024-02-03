@@ -86,7 +86,7 @@ module ppa_16_bit_carry_generate(input logic [15:0] A,B,
     assign Cout[0] = Cin;
 
     // Generate block level gps
-    carry_generate carry1(.gij(bit_g[0]), .pij(bit_p[0]), .cj_1(cin), .cout(Cout[1]));
+    carry_generate carry1(.gij(bit_g[0]), .pij(bit_p[0]), .cj_1(Cin), .cout(Cout[1]));
     gpblk level1_blk1(.gik(bit_g[2]), .pik(bit_p[2]), .gk_1j(bit_g[1]), .pk_1j(bit_p[1]), .gij(g2_1), .pij(p2_1));
     gpblk level1_blk2(.gik(bit_g[4]), .pik(bit_p[4]), .gk_1j(bit_g[3]), .pk_1j(bit_p[3]), .gij(g4_3), .pij(p4_3));
     gpblk level1_blk3(.gik(bit_g[6]), .pik(bit_p[6]), .gk_1j(bit_g[5]), .pk_1j(bit_p[5]), .gij(g6_5), .pij(p6_5));
