@@ -119,10 +119,10 @@ module ppa_16_bit_carry_generate(input logic [15:0] A,B,
     logic g13_7, p13_7;
     logic g14_7, p14_7;
 
-    carry_generate carry4(.gij(bit_g[3]), .pij(bit_p[3]), .cj_1(Cout[2]), .cout(Cout[4]));
-    carry_generate carry5(.gij(g4_3), .pij(p4_3), .cj_1(Cout[2]), .cout(Cout[5]));
-    carry_generate carry6(.gij(g5_3), .pij(p5_3), .cj_1(Cout[2]), .cout(Cout[6]));
-    carry_generate carry7(.gij(g6_3), .pij(p6_3), .cj_1(Cout[2]), .cout(Cout[7]));
+    carry_generate carry4(.gij(bit_g[3]), .pij(bit_p[3]), .cj_1(Cout[3]), .cout(Cout[4]));
+    carry_generate carry5(.gij(g4_3), .pij(p4_3), .cj_1(Cout[3]), .cout(Cout[5]));
+    carry_generate carry6(.gij(g5_3), .pij(p5_3), .cj_1(Cout[3]), .cout(Cout[6]));
+    carry_generate carry7(.gij(g6_3), .pij(p6_3), .cj_1(Cout[3]), .cout(Cout[7]));
     gpblk level3_blk1(.gik(bit_g[11]), .pik(bit_p[11]), .gk_1j(g10_7), .pk_1j(p10_7), .gij(g11_7), .pij(p11_7));
     gpblk level3_blk2(.gik(g12_11), .pik(p12_11), .gk_1j(g10_7), .pk_1j(p10_7), .gij(g12_7), .pij(p12_7));
     gpblk level3_blk3(.gik(g13_11), .pik(p13_11), .gk_1j(g10_7), .pk_1j(p10_7), .gij(g13_7), .pij(p13_7));
