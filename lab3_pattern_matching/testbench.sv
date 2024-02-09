@@ -1,7 +1,7 @@
 module testbench();
   logic [31:0]a,b;
   logic [31:0]y;
-  pattern pattern_match(a,b,y);//rename module
+  pattern_match dut(a,b,y);//rename module
   initial begin 
     a = 32'hFFFF37DF; b= 32'hABCDEF6F; #10;
     if (y !== 32'h1FFF02CB ) $display("test 1 failed.");
