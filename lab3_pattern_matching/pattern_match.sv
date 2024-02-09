@@ -12,8 +12,9 @@ module pattern_match(input logic [31:0] A,B,
     //start pattern matching
     generate
         genvar i;
-        for (i = 0; i <= 28; i = i + 1)
+        for (i = 0; i <= 28; i = i + 1) begin : appx_match_for_block
             appx_match appx_match_check_circ(A[i+3:i], B[3:0], dont_care, Y[i]);
+		  end
     endgenerate
 
     //assing the last 4 bits of output to 0
