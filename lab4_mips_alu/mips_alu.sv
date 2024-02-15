@@ -48,7 +48,7 @@ module mips_alu(input logic [31:0]  A, B,
     ppa_32bit adder(A, B, F[2], D2, Cout);
 
     //get the output of the ALU
-    mux4to1(D0, D1, D2, D3, F[1:0], Y);
+    mux4to1 multiplexer(D0, D1, D2, D3, F[1:0], Y);
 
     assign Zero = (Y == 32'b0) ? 1'b1 : 1'b0;
     

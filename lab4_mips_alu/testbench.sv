@@ -15,9 +15,14 @@ module testbench();
             $readmemh("alu.tv", test_vectors);
             vectornum = 0;
             errors = 0;
-            rst = 1; #30; rst = 0;
+            reset = 1; #30; reset = 0;
             $display("\n\n=============================================");
             $display("Starting simulation");
+        end
+
+    always 
+        begin
+            clk = 1; #5; clk = 0; #5;
         end
 
     always @(posedge clk)
@@ -32,7 +37,7 @@ module testbench();
     
     always @(negedge clk)
         begin
-            if (~rst) begin
+            if (~reset) begin
 
                 if ((Y != Y_expected) || (Z != Z_expected)) begin
                     $display("\t\tError: \t\tinput = %h-%h-%h | exp_output = %h-%h | actual_output = %h-%h | Testvector - %h", F, A, B,Y_expected, Z_expected, Y, Z, vectornum);
