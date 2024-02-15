@@ -12,7 +12,7 @@ module testbench();
     //read the test vector file
     initial
         begin
-            $readmemh("alu.tv", test_vectors);
+            $readmemh("D:/class_work/semester2/ece469/hdl_practice/lab4_mips_alu/alu.tv", test_vectors);
             vectornum = 0;
             errors = 0;
             reset = 1; #30; reset = 0;

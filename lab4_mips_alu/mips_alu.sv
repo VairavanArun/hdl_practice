@@ -40,12 +40,14 @@ module mips_alu(input logic [31:0]  A, B,
 
     assign negated_B = F[2] ? (~B):B;
 
+    assign D3 = {31'b0, D2[31]};
+
     //instantiate and module
     and_32bit and_circ(A, B, D0);
     //instantiate or module
     or_32bit or_circ(A, B, D1);
     //instantiate adder
-    ppa_32bit adder(A, B, F[2], D2, Cout);
+    ppa_32bit adder(A, negated_B, F[2], D2, Cout);
 
     //get the output of the ALU
     mux4to1 multiplexer(D0, D1, D2, D3, F[1:0], Y);
