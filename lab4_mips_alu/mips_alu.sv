@@ -36,12 +36,15 @@ module mips_alu(input logic [31:0]  A, B,
 
     logic [31:0] D0, D1, D2, D3;
     logic [31:0] negated_B;
+    logic [31:0] pattern_match_out;
     logic Cout;
 
     assign negated_B = F[2] ? (~B):B;
 
-    assign D3 = {31'b0, D2[31]};
+    assign D3 = F[2] ? {31'b0, D2[31]} : pattern_match_out;
 
+    //instantitate pattern match module
+    pattern_match pattern_match_circ(A, B, pattern_match_out);
     //instantiate and module
     and_32bit and_circ(A, B, D0);
     //instantiate or module
