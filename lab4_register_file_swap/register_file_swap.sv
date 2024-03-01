@@ -4,10 +4,10 @@
  * consisting of 8 registers
  */
 
-module register_file_swap(input logic  clk, init,
-                          input logic  swapxy,
-                          input logic  [2:0]x,y,
-                          output logic [3:0]r[7:0]);
+module register_file_swap (input logic  clk, init,
+                           input logic  swapxy,
+                           input logic  [2:0]x,y,
+                           output logic [3:0]r[7:0]);
     
     always_ff @(posedge clk, posedge init) 
     begin
