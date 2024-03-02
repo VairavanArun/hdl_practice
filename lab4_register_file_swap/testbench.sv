@@ -39,10 +39,13 @@ module testbench();
 
         //Test case 2
         swapxy = 1'b1;
-        x = 3'd0; y = 3'd7; #20;
-        x = 3'd1; y = 3'd6; #20;
-        x = 3'd2; y = 3'd5; #20;
+        x = 3'd0; y = 3'd1; #20;
+        x = 3'd1; y = 3'd2; #20;
+        x = 3'd2; y = 3'd3; #20;
         x = 3'd3; y = 3'd4; #20;
+        x = 3'd4; y = 3'd5; #20;
+        x = 3'd5; y = 3'd6; #20;
+        x = 3'd6; y = 3'd7; #20;
         swapxy = 1'b0;
 
         #15; init = 1'b1; #5; init = 1'b0;
