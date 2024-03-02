@@ -14,38 +14,47 @@ module testbench();
     //define clock behavior
     always 
     begin
-        clk = 1; #5; clk = 0; #5;
+        clk = 1; #10; clk = 0; #10;
     end
 
     //initialize the registers
     initial
     begin
         //initiliaze the registers in negative edge to verify asynchronous initialization
-        #5; 
-        init = 1;
-        swapxy = 0;
-        #5;
-        init = 0;
-    end
+        x = 3'd0; y = 3'd0; swapxy = 1'b0; init = 1'b0;
+        #15; 
 
-    always @(posedge clk)
-    begin
-        #2;
-        x <= 1;
-        y <= 6;
-    end
+        //Initiliaze the registers
+        init = 1'b1; #20; init = 1'b0;
 
-    always @(negedge clk)
-    begin
-        #1;
-        init <= 1; 
-        x <= 0;
-        y <= 7; 
-        swapxy <= 1;
-        #3;
-        init <= 0;
-        #2
-        swapxy <= 0; 
+        //Test case 1
+        swapxy = 1'b1;
+        x = 3'd0; y = 3'd7; #20;
+        x = 3'd1; y = 3'd6; #20;
+        x = 3'd2; y = 3'd5; #20;
+        x = 3'd3; y = 3'd4; #7;
+        swapxy = 1'b0;
+
+        #8; init = 1'b1; #7; init = 1'b0;
+
+        //Test case 2
+        swapxy = 1'b1;
+        x = 3'd0; y = 3'd7; #20;
+        x = 3'd1; y = 3'd6; #20;
+        x = 3'd2; y = 3'd5; #20;
+        x = 3'd3; y = 3'd4; #20;
+        swapxy = 1'b0;
+
+        #15; init = 1'b1; #5; init = 1'b0;
+
+        swapxy = 1'b1;
+        x = 3'd0; y = 3'd3; #20;
+        x = 3'd2; y = 3'd5; #20;
+        x = 3'd3; y = 3'd6; #20;
+        x = 3'd4; y = 3'd6; #20;
+        x = 3'd5; y = 3'd7; #20;
+        x = 3'd6; y = 3'd7; #20;
+        swapxy = 1'b0;
     end
 
 endmodule
