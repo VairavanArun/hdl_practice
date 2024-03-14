@@ -20,7 +20,7 @@ module imem(input  logic [5:0]  a,
 
   initial
     begin
-      $readmemh("memfile.dat",RAM); // initialize memory
+      $readmemh("memfile_b.dat",RAM); // initialize memory
     end
 
   assign rd = RAM[a]; // word aligned

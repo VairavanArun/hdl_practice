@@ -35,13 +35,16 @@ module controller(input  logic [5:0] op, funct,
 
   logic [1:0] aluop;
   logic       branch;
+  logic       notZero, bne;
 
   maindec md(op, memtoreg, memwrite, branch,
              alusrc, regdst, regwrite, jump,
              aluop);
   aludec  ad(funct, aluop, alucontrol);
 
-  assign pcsrc = branch & zero;
+  assign bne = op[0];
+  assign notZero = ~zero;
+  assign pcsrc = branch & (bne ? notZero : zero);
 endmodule
 
 module maindec(input  logic [5:0] op,
@@ -65,6 +68,8 @@ module maindec(input  logic [5:0] op,
       6'b000100: controls = 9'b000100001; //BEQ
       6'b001000: controls = 9'b101000000; //ADDI
       6'b000010: controls = 9'b000000100; //J
+      6'b000101: controls = 9'b000100001; //BNE
+      6'b001010: controls = 9'b101000011; //SLTI
       default:   controls = 9'bxxxxxxxxx; //???
     endcase
 endmodule
@@ -77,6 +82,7 @@ module aludec(input  logic [5:0] funct,
     case(aluop)
       2'b00: alucontrol = 3'b010;  // add
       2'b01: alucontrol = 3'b110;  // sub
+      2'b11: alucontrol = 3'b111;  // SLTI
       default: case(funct)          // RTYPE
           6'b100000: alucontrol = 3'b010; // ADD
           6'b100010: alucontrol = 3'b110; // SUB
