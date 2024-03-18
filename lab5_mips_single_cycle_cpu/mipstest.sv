@@ -28,10 +28,10 @@ module testbench();
     begin
       if(memwrite) begin
         $display("Dataadr: %h, Writedata: %h", dataadr, writedata);
-        if(dataadr === 20 & writedata === 28) begin
+        if(dataadr === 16 & writedata === -6) begin
           $display("Simulation succeeded");
           $stop;
-        end else if ((dataadr !== 52) & (dataadr !== 32) & (dataadr !== 28) & (dataadr !== 24)) begin
+        end else if ((dataadr !== 20) & (dataadr !== 24) & (dataadr !== 28) & (dataadr !== 32) & (dataadr !== 36) & (dataadr !== 40)) begin
           $display("Simulation failed");
           $stop;
         end

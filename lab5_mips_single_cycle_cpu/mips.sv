@@ -10,23 +10,23 @@ module mips(input  logic        clk, reset,
             input  logic [31:0] readdata);
 
   logic        memtoreg, branch,
-               pcsrc, zero,
+               pcsrc, zero, overflow,
                alusrc, regdst, regwrite, jump;
   logic [2:0]  alucontrol;
 
-  controller c(instr[31:26], instr[5:0], zero,
+  controller c(instr[31:26], instr[5:0], zero, overflow, aluout[31], 
                memtoreg, memwrite, pcsrc,
                alusrc, regdst, regwrite, jump,
                alucontrol);
   datapath dp(clk, reset, memtoreg, pcsrc,
               alusrc, regdst, regwrite, jump,
               alucontrol,
-              zero, pc, instr,
+              zero, overflow, pc, instr,
               aluout, writedata, readdata);
 endmodule
 
 module controller(input  logic [5:0] op, funct,
-                  input  logic       zero,
+                  input  logic       zero, overflow, negative,
                   output logic       memtoreg, memwrite,
                   output logic       pcsrc, alusrc,
                   output logic       regdst, regwrite,
@@ -35,7 +35,9 @@ module controller(input  logic [5:0] op, funct,
 
   logic [1:0] aluop;
   logic       branch;
-  logic       notZero, bne;
+  logic       notZero, bne, ble;
+  // Add wires to get PC select line for BNE, BEQ, BLE
+  logic       pcsrceq, pcsrcle, pcbranch; 
 
   maindec md(op, memtoreg, memwrite, branch,
              alusrc, regdst, regwrite, jump,
@@ -43,8 +45,17 @@ module controller(input  logic [5:0] op, funct,
   aludec  ad(funct, aluop, alucontrol);
 
   assign bne = op[0];
+  assign ble = op[1];
   assign notZero = ~zero;
-  assign pcsrc = branch & (bne ? notZero : zero);
+  //Get if SrcA <= SrcB from zero, negative and overflow flag
+  assign pcsrcle = zero | (negative ^ overflow);
+  
+  //select PC select line between BEQ and BNE
+  mux2 #(1) pcsrceqmux(zero, notZero, bne, pcsrceq);
+  //select PC select line between BEQ, BNE and BLE
+  mux2 #(1) pcsrcmux(pcsrceq, pcsrcle, ble, pcbranch);
+
+  assign pcsrc = branch & pcbranch;
 endmodule
 
 module maindec(input  logic [5:0] op,
@@ -70,6 +81,7 @@ module maindec(input  logic [5:0] op,
       6'b000010: controls = 9'b000000100; //J
       6'b000101: controls = 9'b000100001; //BNE
       6'b001010: controls = 9'b101000011; //SLTI
+      6'b000110: controls = 9'b000100001; //BLE
       default:   controls = 9'bxxxxxxxxx; //???
     endcase
 endmodule
@@ -89,6 +101,7 @@ module aludec(input  logic [5:0] funct,
           6'b100100: alucontrol = 3'b000; // AND
           6'b100101: alucontrol = 3'b001; // OR
           6'b101010: alucontrol = 3'b111; // SLT
+          6'b101011: alucontrol = 3'b011; // SLTU
           default:   alucontrol = 3'bxxx; // ???
         endcase
     endcase
@@ -99,7 +112,7 @@ module datapath(input  logic        clk, reset,
                 input  logic        alusrc, regdst,
                 input  logic        regwrite, jump,
                 input  logic [2:0]  alucontrol,
-                output logic        zero,
+                output logic        zero, overflow,
                 output logic [31:0] pc,
                 input  logic [31:0] instr,
                 output logic [31:0] aluout, writedata,
@@ -110,9 +123,6 @@ module datapath(input  logic        clk, reset,
   logic [31:0] signimm, signimmsh;
   logic [31:0] srca, srcb;
   logic [31:0] result;
-  
-  //overflow added to be used for ALU
-  logic overflow;
 
   // next PC logic
   flopr #(32) pcreg(clk, reset, pcnext, pc);
