@@ -1,0 +1,77 @@
+module testbench();
+
+    logic clk, setD, init, valid;
+    logic [3:0] D_lookup, newD;
+    logic [2:0] minaddr, maxaddr;
+
+    cam mem1(clk, D_lookup, setD, newD, init, minaddr, maxaddr, valid);
+
+    always begin
+        clk = 1; #10; clk = 0; #10;
+    end
+
+    initial begin
+        $display("\n\n=============================================");
+        $display("Starting simulation");
+
+        //Test-1: Initialize registers
+        init = 1;
+        D_lookup = 4'b0000;
+        setD = 1'b0;
+        #20; init = 0;
+
+        //Test-2: D_Lookup = 1011, setD = 0
+        D_lookup = 4'b1011; setD = 0; #2;
+        $display("D_lookup: %b, setD = %b, valid = %b, minaddr: %b, maxaddr: %b\n", 
+                    D_lookup, setD, valid, minaddr, maxaddr);
+        if ((minaddr !== 3'b011) || (maxaddr !== 3'b011) || (valid !== 1'b1)) begin
+            $display("Simulation Failed\n");
+            $stop;
+        end
+        #18;
+
+        //Test-3: D_Lookup = 1011, setD = 1, newD = 1110
+        D_lookup = 4'b1011; setD = 1; newD = 4'b1110; #2;
+        $display("D_lookup: %b, setD = %b, newD = %b, valid = %d, minaddr: %d, maxaddr: %d\n", 
+                    D_lookup, setD, newD, valid, minaddr, maxaddr);
+        end
+        #18;
+
+        //Test-4: D_Lookup = 1110, setD = 0
+        D_lookup = 4'b1110; setD = 0; #2;
+        $display("D_lookup: %b, setD = %b, valid = %b, minaddr: %b, maxaddr: %b\n", 
+                    D_lookup, setD, valid, minaddr, maxaddr);
+        if ((minaddr !== 3'b011) || (maxaddr !== 3'b110) || (valid !== 1'b1)) begin
+            $display("Simulation Failed\n");
+            $stop;
+        end
+        #18;
+
+        //Test-5: D_Lookup = 1011, setD = 0
+        D_lookup = 4'b1011; setD = 0; #2;
+        $display("D_lookup: %b, setD = %b, valid = %b, minaddr: %b, maxaddr: %b\n", 
+                    D_lookup, setD, valid, minaddr, maxaddr);
+        if ((valid !== 1'b0)) begin
+            $display("Simulation Failed\n");
+            $stop;
+        end
+        #18;
+
+        //Test-6: D_Lookup = 1110, setD = 1, newD = 1010
+        D_lookup = 4'b1110; setD = 1; newD = 4'b1010; #2;
+        $display("D_lookup: %b, setD = %b, newD = %b, valid = %d, minaddr: %d, maxaddr: %d\n", 
+                    D_lookup, setD, newD, valid, minaddr, maxaddr);
+        #18;
+
+        //Test-7: D_Lookup = 1010, setD = 0
+        D_lookup = 4'b1010; setD = 0; #2;
+        $display("D_lookup: %b, setD = %b, valid = %b, minaddr: %b, maxaddr: %b\n", 
+                    D_lookup, setD, valid, minaddr, maxaddr);
+        if ((minaddr !== 3'b010) || (maxaddr !== 3'b110) || (valid !== 1)) begin
+            $display("Simulation Failed\n");
+            $stop;
+        end
+        #18;
+    end
+
+endmodule

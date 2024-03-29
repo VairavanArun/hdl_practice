@@ -38,7 +38,7 @@ endmodule
 module comparator_4bit(input logic [3:0] a,b,
                        output logic eq);
 
-    assign eq = (a[0] xnor b[0]) and (a[1] xnor b[1]) and (a[2] xnor b[2]) and (a[3] nor b[3]);
+    assign eq = (~(a[0] ^ b[0])) & (~(a[1] ^ b[1])) & (~(a[2] ^ b[2])) & (~(a[3] ^ b[3]));
 
 endmodule
 
@@ -47,31 +47,33 @@ module comparator (input logic [3:0] D_lookup,
                    input logic [3:0]r[7:0],
                    output logic [7:0]r_eq);
 
-    always_comb begin
-        generate
-            genvar i;
-            for (i = 0; i < 8; i = i + 1) begin: comparator_generate_block
-                comparator_4bit equal_check(D_lookup, r[i], r_eq[i]);
-            end
-
-        endgenerate
-    end
+    generate
+        genvar i;
+        for (i = 0; i < 8; i = i + 1) begin: comparator_generate_block
+            comparator_4bit equal_check(D_lookup, r[i], r_eq[i]);
+        end
+    endgenerate
 
 endmodule
 
+
+module and_2bit(input logic a,b,
+                output logic a_and_b);
+
+    assign a_and_b = a & b;
+
+endmodule
 
 module write_enable_generate(input logic setD,
                              input logic [7:0]r_eq,
                              output logic [7:0]en);
 
-    always_comb begin
-        generate
-            genvar i;
-            for (i = 0; i < 8; i = i + 1) begin: write_enable_generate_block
-                en[i] = setD & r_eq[i];
-            end
-        endgenerate
-    end
+    generate
+        genvar i;
+        for (i = 0; i < 8; i = i + 1) begin: write_enable_generate_block
+            and_2bit wen_gen(setD, r_eq[i], en[i]);
+        end
+    endgenerate
     
 endmodule
 
@@ -82,7 +84,7 @@ module priority_encoder(input logic [7:0]r_eq,
 
     always_comb begin
         valid = 1'b1;
-        y = 3'b000;
+        y = 3'b111;
         if (r_eq[7]) y = 3'b111;
         else if (r_eq[6]) y = 3'b110;
         else if (r_eq[5]) y = 3'b101;
@@ -91,7 +93,9 @@ module priority_encoder(input logic [7:0]r_eq,
         else if (r_eq[2]) y = 3'b010;
         else if (r_eq[1]) y = 3'b001;
         else if (r_eq[0]) y = 3'b000;
-        else valid = 1'b0;
+        else begin 
+            valid = 1'b0;
+        end
     end
 
 endmodule
@@ -113,7 +117,9 @@ module priority_inv_encoder(input logic [7:0]r_eq,
         else if (r_eq[5]) y = 3'b101;
         else if (r_eq[6]) y = 3'b110;
         else if (r_eq[7]) y = 3'b111;
-        else valid = 1'b0;
+        else begin
+            valid = 1'b0;
+        end
     end
 
 endmodule
@@ -133,9 +139,10 @@ module cam(input logic clk,
     register_file rf(clk, init, newD, en, r);
     comparator eq_check(D_lookup, r, r_eq);
     write_enable_generate enable_generate(setD, r_eq, en);
-    priority_encoder priority_enc(r_eq, minaddr, valid);
-    priority_inv_encoder priority_inv_enc(r_eq, maxaddr);
+    priority_encoder priority_enc(r_eq, maxaddr, valid);
+    priority_inv_encoder priority_inv_enc(r_eq, minaddr);
 
 endmodule
+
 
 
