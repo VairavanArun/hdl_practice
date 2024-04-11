@@ -16,7 +16,7 @@ module mips(input  logic        clk, reset,
   logic [2:0]  alucontrol;
   logic [5:0]  op, funct;
 
-  controller c(clk, reset, op, funct, zero,
+  controller c(clk, reset, op, funct, zero, negative, overflow
                pcen, memwrite, irwrite, regwrite,
                alusrca, iord, memtoreg, regdst, 
                alusrcb, pcsrc, alucontrol);
@@ -24,13 +24,13 @@ module mips(input  logic        clk, reset,
               pcen, irwrite, regwrite,
               alusrca, iord, memtoreg, regdst,
               alusrcb, pcsrc, alucontrol,
-              op, funct, zero,
+              op, funct, zero, negative, overflow,
               adr, writedata, readdata);
 endmodule
 
 module controller(input  logic       clk, reset,
                   input  logic [5:0] op, funct,
-                  input  logic       zero,
+                  input  logic       zero, negative, overflow, 
                   output logic       pcen, memwrite, irwrite, regwrite,
                   output logic       alusrca, iord, memtoreg, regdst,
                   output logic [1:0] alusrcb, pcsrc,
@@ -38,6 +38,7 @@ module controller(input  logic       clk, reset,
 
   logic [1:0] aluop;
   logic       branch, pcwrite;
+  logic       is_lte, is_branch_taken;
 
   // Main Decoder and ALU Decoder subunits.
   maindec md(clk, reset, op,
@@ -46,10 +47,9 @@ module controller(input  logic       clk, reset,
              alusrcb, pcsrc, aluop);
   aludec  ad(funct, aluop, alucontrol);
 
-  // ADD CODE HERE
-  // Add combinational logic (i.e. an assign statement) 
-  // to produce the PCEn signal (pcen) from the branch, 
-  // zero, and pcwrite signals
+  assign is_lte = zero | (negative ^ overflow); 
+  assign is_branch_taken = op[1] ? is_lte : zero;
+  assign pc_en = pcwrite | (branch & is_branch_taken);
  
 endmodule
 
@@ -79,6 +79,7 @@ module maindec(input  logic       clk, reset,
   parameter   BEQ     = 6'b000100;	// Opcode for beq
   parameter   ADDI    = 6'b001000;	// Opcode for addi
   parameter   J       = 6'b000010;	// Opcode for j
+  parameter   BLE     = 6'b000110;  // Opcode for ble
 
   logic [3:0]  state, nextstate;
   logic [14:0] controls;
@@ -87,10 +88,6 @@ module maindec(input  logic       clk, reset,
   always_ff @(posedge clk or posedge reset)			
     if(reset) state <= FETCH;
     else state <= nextstate;
-
-  // ADD CODE HERE
-  // Finish entering the next state logic below.  We've completed the first 
-  // two states, FETCH and DECODE, for you.
 
   // next state logic
   always_comb
@@ -106,16 +103,20 @@ module maindec(input  logic       clk, reset,
                  default: nextstate <= 4'bx; // should never happen
                endcase
  		// Add code here
-      MEMADR:
-      MEMRD: 
-      MEMWB: 
-      MEMWR: 
-      RTYPEEX: 
-      RTYPEWB: 
-      BEQEX:   
-      ADDIEX:  
-      ADDIWB:  
-      JEX:     
+      MEMADR:  case(op)
+                 LW:      nextstate <= MEMRD;
+                 SW:      nextstate <= MEMWR;
+                 default: nextstate <= 4'bx;
+               endcase
+      MEMRD:   nextstate <= MEMWB;
+      MEMWB:   nextstate <= FETCH;
+      MEMWR:   nextstate <= FETCH;
+      RTYPEEX: nextstate <= RTYPEWB;
+      RTYPEWB: nextstate <= FETCH;
+      BEQEX:   nextstate <= FETCH;
+      ADDIEX:  nextstate <= ADDIWB;
+      ADDIWB:  nextstate <= FETCH;
+      JEX:     nextstate <= FETCH;
       default: nextstate <= 4'bx; // should never happen
     endcase
 
@@ -124,16 +125,20 @@ module maindec(input  logic       clk, reset,
           alusrca, branch, iord, memtoreg, regdst,
           alusrcb, pcsrc, aluop} = controls;
 
-  // ADD CODE HERE
-  // Finish entering the output logic below.  We've entered the
-  // output logic for the first two states, S0 and S1, for you.
   always_comb
     case(state)
       FETCH:   controls <= 15'h5010;
       DECODE:  controls <= 15'h0030;
-    // your code goes here      
-    
-	 
+      MEMADR:  controls <= 15'h0420;
+      MEMRD:   controls <= 15'h0100;
+      MEMWB:   controls <= 15'h0880;
+      MEMWR:   controls <= 15'h2100;
+      RTYPEEX: controls <= 15'h0402;
+      RTYPEWB: controls <= 15'h0840;
+      BEQEX:   controls <= 15'h0605;
+      ADDIEX:  controls <= 15'h0420;
+      ADDIWB:  controls <= 15'h0800;
+      JEX:     controls <= 15'h4008; 
       default: controls <= 15'hxxxx; // should never happen
     endcase
 endmodule
@@ -142,12 +147,21 @@ module aludec(input  logic [5:0] funct,
               input  logic [1:0] aluop,
               output logic [2:0] alucontrol);
 
-  // ADD CODE HERE
-  // Complete the design for the ALU Decoder.
-  // Your design goes here.  Remember that this is a combinational 
-  // module. 
-
-  // Remember that you may also reuse any code from previous labs.
+  always_comb
+    case(aluop)
+      2'b00: alucontrol = 3'b010;  // add
+      2'b01: alucontrol = 3'b110;  // sub
+      2'b10: case(funct)          // RTYPE
+          6'b100000: alucontrol = 3'b010; // ADD
+          6'b100010: alucontrol = 3'b110; // SUB
+          6'b100100: alucontrol = 3'b000; // AND
+          6'b100101: alucontrol = 3'b001; // OR
+          6'b101010: alucontrol = 3'b111; // SLT
+          6'b101011: alucontrol = 3'b011; // SLTU
+          default:   alucontrol = 3'bxxx; // ???
+        endcase
+      default: alucontrol = 3'bxxx;
+    endcase
 
 endmodule
 
@@ -168,7 +182,7 @@ module datapath(input  logic        clk, reset,
                 input  logic [1:0]  alusrcb, pcsrc, 
                 input  logic [2:0]  alucontrol,
                 output logic [5:0]  op, funct,
-                output logic        zero,
+                output logic        zero, negative, overflow, 
                 output logic [31:0] adr, writedata, 
                 input  logic [31:0] readdata);
 
@@ -187,22 +201,25 @@ module datapath(input  logic        clk, reset,
   assign op = instr[31:26];
   assign funct = instr[5:0];
 
-  // Your datapath hardware goes below.  Instantiate each of the submodules
-  // that you need.  Remember that alu's, mux's and various other 
-  // versions of parameterizable modules are available in mipsparts.sv
-  // from Lab 9. You'll likely want to include this verilog file in your
-  // simulation.
-
-  // We've included parameterizable 3:1 and 4:1 muxes below for your use.
-
-  // Remember to give your instantiated modules applicable names
-  // such as pcreg (PC register), wdmux (Write Data Mux), etc.
-  // so it's easier to understand.
-
-  // ADD CODE HERE
-
   // datapath
-  
+  flopenr #(32) pcreg(clk, reset, pcen, pcnext, pc);
+  mux2    #(32) adr_select(pc, aluout, iord, adr);
+  flopenr #(32) instrreg(clk, reset, irwrite, readdata, instr);
+  flopr   #(32) datareg(clk, reset, readdata, data);
+  mux2    #(5)  writereg_select(instr[20:16], instr[15:11], regdst, writereg);
+  mux2    #(32) writedata_select(aluout, data, memtoreg, wd3);
+  regfile       rf(clk, regwrite, instr[25:21], instr[20:16], writereg, wd3, rd1, rd2);
+  signext       sign_extend(instr[15:0], signimm);
+  sl2           shiftleft(signimm, signimmsh);
+  flopr   #(32) rega(clk, reset, rd1, a);
+  flopr   #(32) regb(clk, reset, rd2, writedata); 
+  mux2    #(32) srca_select(pc, a, alusrca, srca);
+  mux4    #(32) srcb_select(writedata, 32'h0004, signimm, signimmsh, alusrcb, srcb);
+  mips_alu      alu(.A(srca), .B(srcb), .F(alucontrol), .Y(aluresult), .Zero(zero), .OF(overflow));
+  assign negative = aluresult[31];
+  flopr   #(32) aluoutreg(clk, reset, aluresult, aluout);
+  mux3    #(32) pcnext_select(aluresult, aluout, {pc[31:28], instr[25:0], 2'b00}, pcsrc, pcnext);
+
 endmodule
 
 
