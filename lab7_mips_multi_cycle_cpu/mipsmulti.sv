@@ -245,3 +245,36 @@ module mux4 #(parameter WIDTH = 8)
       endcase
 endmodule
 
+module mem(input logic  clk, we, 
+           input logic  [31:0] a, wd,
+           output logic [31:0] rd);
+
+  logic [31:0] RAM[63:0];
+
+  initial begin
+    $readmemh("memfile.dat", RAM);
+  end
+
+  assign rd = RAM[a[31:2]];
+
+  always_ff @(posedge clk)
+    if (we)
+      RAM[a[31:2]] <= wd;
+
+endmodule
+
+
+module top(input logic         clk, reset,
+           output logic [31:0] writedata, adr,
+           output logic        memwrite);
+
+  logic [31:0] readdata;
+
+  //microprocess (control and datapath)
+  mips mips(clk, reset, adr, writedata, memwrite, readdata);
+
+  //memory
+  mem mem(clk, memwrite, adr, writedata, readdata);
+
+endmodule
+
