@@ -8,22 +8,24 @@ typedef struct {
     logic [5:0] funct;
 } opcode_function_t;
 
-typedef enum opcode_function_t {LW    = '{6'b100011, 6'b000000},
-                                SW    = '{6'b101011, 6'b000000},
-                                BEQ   = '{6'b000100, 6'b000000},
-                                ADDI  = '{6'b001000, 6'b000000},
-                                J     = '{6'b000010, 6'b000000},
-                                BLE   = '{6'b000110, 6'b000000},
-                                ADD   = '{6'b000000, 6'b100000},
-                                SUB   = '{6'b000000, 6'b100010},
-                                OR    = '{6'b000000, 6'b100101},
-                                AND   = '{6'b000000, 6'b100100},
-                                SLT   = '{6'b000000, 6'b101010},
-                                SLTU  = '{6'b000000, 6'b101011}} opcode_function_e;
+typedef enum bit [6:0] {LW    = 6'b100011,
+                        SW    = 6'b101011,
+                        BEQ   = 6'b000100,
+                        ADDI  = 6'b001000,
+                        J     = 6'b000010,
+                        BLE   = 6'b000110,
+                        RTYPE   = 6'b000000} opcode_e;
 
+typedef enum bit [6:0] {ITYPE = 6'b000000,
+                        ADD = 6'b100000,
+                        SUB = 6'b100010,
+                        OR = 6'b100101,
+                        AND = 6'b100100,
+                        SLT = 6'b101010,
+                        SLTU = 6'b101011} function_e;
 
 typedef struct {
-    opcode_function_e opc_func;
+    opcode_function_t opc_func;
     logic zero, negative, overflow;
     logic [3:0] cycle_count;
 } controller_input_t;
@@ -39,45 +41,41 @@ typedef enum bit [4:0] {FETCH   = 4'b0000,  // State 0
                         BEQEX   = 4'b1000,	// State 8
                         ADDIEX  = 4'b1001,	// State 9
                         ADDIWB  = 4'b1010,	// state 10
-                        JEX     = 4'b1011,	// State 11
+                        JEX     = 4'b1011	// State 11
                         } state_e;
 
 module controllertest_tb();
 
     logic clk, reset;
     //10 instructions, 4 branch instructions (branch taken), 3 branch instructions (branch not taken)
-    controller_input_t controller_input[17] = '{'{LW,   1'b0, 1'b0, 1'b0, 4'd5},
-                                                '{SW,   1'b0, 1'b0, 1'b0, 4'd4},
-                                                '{BEQ,  1'b1, 1'b0, 1'b0, 4'd3}, //BEQ taken
-                                                '{BEQ,  1'b0, 1'b0, 1'b0, 4'd3}, //BEQ not taken
-                                                '{BLE,  1'b1, 1'b0, 1'b0, 4'd3}, //BLE taken (equal)
-                                                '{BLE,  1'b0, 1'b0, 1'b1, 4'd3}, //BLE taken (Overflow without negative)
-                                                '{BLE,  1'b0, 1'b1, 1'b0, 4'd3}, //BLE taken (Negative without overflow)
-                                                '{BLE,  1'b0, 1'b1, 1'b1, 4'd3}, //BLE not taken (negative and overflow)
-                                                '{BLE,  1'b0, 1'b0, 1'b0, 4'd3}, //BLE not taken (greater than)
-                                                '{ADDI, 1'b0, 1'b0, 1'b0, 4'd4},
-                                                '{J,    1'b0, 1'b0, 1'b0, 4'd3},
-                                                '{ADD,  1'b0, 1'b0, 1'b0, 4'd4},
-                                                '{SUB,  1'b0, 1'b0, 1'b0, 4'd4},
-                                                '{OR,   1'b0, 1'b0, 1'b0, 4'd4},
-                                                '{AND,  1'b0, 1'b0, 1'b0, 4'd4},
-                                                '{SLT,  1'b0, 1'b0, 1'b0, 4'd4},
-                                                '{SLTU, 1'b0, 1'b0, 1'b0, 4'd4}}; 
+    controller_input_t controller_input[17] = '{'{'{LW, ITYPE},   1'b0, 1'b0, 1'b0, 4'd5},
+                                                '{'{SW, ITYPE},   1'b0, 1'b0, 1'b0, 4'd4},
+                                                '{'{BEQ, ITYPE},  1'b1, 1'b0, 1'b0, 4'd3}, //BEQ taken
+                                                '{'{BEQ, ITYPE},  1'b0, 1'b0, 1'b0, 4'd3}, //BEQ not taken
+                                                '{'{BLE, ITYPE},  1'b1, 1'b0, 1'b0, 4'd3}, //BLE taken (equal)
+                                                '{'{BLE, ITYPE},  1'b0, 1'b0, 1'b1, 4'd3}, //BLE taken (Overflow without negative)
+                                                '{'{BLE, ITYPE},  1'b0, 1'b1, 1'b0, 4'd3}, //BLE taken (Negative without overflow)
+                                                '{'{BLE, ITYPE},  1'b0, 1'b1, 1'b1, 4'd3}, //BLE not taken (negative and overflow)
+                                                '{'{BLE, ITYPE},  1'b0, 1'b0, 1'b0, 4'd3}, //BLE not taken (greater than)
+                                                '{'{ADDI, ITYPE}, 1'b0, 1'b0, 1'b0, 4'd4},
+                                                '{'{J, ITYPE},    1'b0, 1'b0, 1'b0, 4'd3},
+                                                '{'{RTYPE, ADD},  1'b0, 1'b0, 1'b0, 4'd4},
+                                                '{'{RTYPE, SUB},  1'b0, 1'b0, 1'b0, 4'd4},
+                                                '{'{RTYPE, OR},   1'b0, 1'b0, 1'b0, 4'd4},
+                                                '{'{RTYPE, AND},  1'b0, 1'b0, 1'b0, 4'd4},
+                                                '{'{RTYPE, SLT},  1'b0, 1'b0, 1'b0, 4'd4},
+                                                '{'{RTYPE, SLTU}, 1'b0, 1'b0, 1'b0, 4'd4}}; 
     
     logic [5:0] opcode, funct;
     logic zero, negative, overflow;
     logic pcen, memwrite, irwrite, regwrite;
     logic       alusrca, iord, memtoreg, regdst;
-    logic [1:0] alusrcb, pcsrc;
+    logic [1:0] alusrcb, pcsrc, aluop;
     logic [2:0] alucontrol;
     logic [14:0] control_word;
-    state_e state, nextstate;
+    logic [3:0] state, nextstate;
     logic [31:0] input_index;
-
-    assign control_word = {pcen, memwrite, irwrite, regwrite, 
-                           alusrca, iord, memtoreg, regdst,
-                           alusrcb, pcsrc, aluop};
-
+    logic branch;
     
     controller dut(clk, reset, opcode, funct, zero, negative, overflow, 
                    pcen, memwrite, irwrite, regwrite,
@@ -85,11 +83,16 @@ module controllertest_tb();
                    alusrcb, pcsrc,
                    alucontrol);
 
+    assign branch = dut.branch;
+    assign state = dut.md.state;
+    assign nextstate = dut.md.nextstate;
+    assign aluop = dut.aluop;
+    assign control_word = dut.md.controls;
     
     initial begin
         input_index = 0;
         reset = 1;
-        #10;
+        #15;
         reset = 0;
     end
 
@@ -101,8 +104,11 @@ module controllertest_tb();
     end
 
     always @(posedge clk) begin
-        if !(reset) begin
-            if (input_index === 18) $stop;
+        if (!reset) begin
+            if (input_index === 31'd17) begin
+                $display("Simulation Succeded!");
+                $stop;
+            end
             opcode   = controller_input[input_index].opc_func.opcode;
             funct    = controller_input[input_index].opc_func.funct;
             zero     = controller_input[input_index].zero;
@@ -111,7 +117,7 @@ module controllertest_tb();
         end
     end
 
-    always @(posedge clk) begin
+    always @(negedge clk) begin
         if (!reset) begin
             $display("Opcode: %h, Function: %h, Zero: %h, Negative: %h, Overflow: %h", opcode, funct, zero, negative, overflow);
             $display("State: %h, Next state: %h, Control word: %h", state, nextstate, control_word);
@@ -137,7 +143,7 @@ module controllertest_tb();
                             end
 
                             controller_input[2].opc_func.opcode: begin //BEQ
-                                if ((nextstate !== BEQEX) | (control_word !== 15'h0030) )) begin
+                                if ((nextstate !== BEQEX) | (control_word !== 15'h0030)) begin
                                     $display("Simulation Failed!");
                                     $stop;
                                 end
@@ -151,7 +157,7 @@ module controllertest_tb();
                             end
 
                             controller_input[9].opc_func.opcode: begin //ADDI
-                                if((nexstate !== ADDIEX) | (control_word !== 15'h0030)) begin
+                                if((nextstate !== ADDIEX) | (control_word !== 15'h0030)) begin
                                     $display("Simulation Failed!");
                                     $stop;
                                 end
@@ -173,13 +179,13 @@ module controllertest_tb();
                         endcase
                 
                 MEMRD:
-                    if ((nextstate !== MEMWB) | (control_word !== )) begin
+                    if ((nextstate !== MEMWB) | (control_word !== 15'h0100)) begin
                         $display("Simulation Failed!");
                         $stop;
                     end
 
                 MEMWB: begin
-                        if ((nextstate !== FETCH) | (control_word !== )) begin
+                        if ((nextstate !== FETCH) | (control_word !== 15'h0880)) begin
                             $display("Simulation Failed!");
                             $stop;
                         end
@@ -187,7 +193,7 @@ module controllertest_tb();
                        end
 
                 MEMWR: begin
-                        if ((nextstate !== FETCH) | (control_word !== )) begin
+                        if ((nextstate !== FETCH) | (control_word !== 15'h2100)) begin
                             $display("Simulation Failed!");
                             $stop;
                         end
@@ -195,14 +201,14 @@ module controllertest_tb();
                     end
 
                 RTYPEEX: begin
-                        if ((nextstate !== RTYPEWB) | (control_word !== )) begin
+                        if ((nextstate !== RTYPEWB) | (control_word !== 15'h0402)) begin
                             $display("Simulation Failed!");
                             $stop;
                         end
                     end
                 
                 RTYPEWB: begin
-                        if ((nextstate !== FETCH) | (control_word !== )) begin
+                        if ((nextstate !== FETCH) | (control_word !== 15'h0840)) begin
                             $display("Simulation Failed!");
                             $stop;
                         end
@@ -210,7 +216,7 @@ module controllertest_tb();
                     end
                 
                 BEQEX: begin
-                        if ((next_state !== FETCH) | (control_word !== )) begin
+                        if ((nextstate !== FETCH) | (control_word !== 15'h0605)) begin
                             $display("Simulation Failed!");
                             $stop;
                         end
@@ -218,13 +224,13 @@ module controllertest_tb();
                     end
 
                 ADDIEX:
-                    if ((next_state !== ADDIWB) | (control_word !== )) begin
+                    if ((nextstate !== ADDIWB) | (control_word !== 15'h0420)) begin
                         $display("Simulation Failed!");
                         $stop;
                     end
                 
                 ADDIWB: begin
-                    if ((next_state !== FETCH) | (control_word !== )) begin
+                    if ((nextstate !== FETCH) | (control_word !== 15'h0800)) begin
                         $display("Simulation Failed!");
                         $stop;
                     end
@@ -232,7 +238,7 @@ module controllertest_tb();
                 end
 
                 JEX: begin
-                    if ((next_state !== FETCH) | (control_word !== )) begin
+                    if ((nextstate !== FETCH) | (control_word !== 15'h4008)) begin
                         $display("Simulation Failed!");
                         $stop;
                     end

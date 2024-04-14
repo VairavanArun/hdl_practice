@@ -16,7 +16,7 @@ module mips(input  logic        clk, reset,
   logic [2:0]  alucontrol;
   logic [5:0]  op, funct;
 
-  controller c(clk, reset, op, funct, zero, negative, overflow
+  controller c(clk, reset, op, funct, zero, negative, overflow,
                pcen, memwrite, irwrite, regwrite,
                alusrca, iord, memtoreg, regdst, 
                alusrcb, pcsrc, alucontrol);
@@ -49,7 +49,7 @@ module controller(input  logic       clk, reset,
 
   assign is_lte = zero | (negative ^ overflow); 
   assign is_branch_taken = op[1] ? is_lte : zero;
-  assign pc_en = pcwrite | (branch & is_branch_taken);
+  assign pcen = pcwrite | (branch & is_branch_taken);
  
 endmodule
 
@@ -98,6 +98,7 @@ module maindec(input  logic       clk, reset,
                  SW:      nextstate <= MEMADR;
                  RTYPE:   nextstate <= RTYPEEX;
                  BEQ:     nextstate <= BEQEX;
+                 BLE:     nextstate <= BEQEX;
                  ADDI:    nextstate <= ADDIEX;
                  J:       nextstate <= JEX;
                  default: nextstate <= 4'bx; // should never happen
