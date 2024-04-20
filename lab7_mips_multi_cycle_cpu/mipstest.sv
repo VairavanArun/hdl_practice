@@ -1,6 +1,6 @@
 // Example testbench for MIPS processor
 
-module testbench();
+module testbench_testb();
 
   logic        clk;
   logic        reset;
